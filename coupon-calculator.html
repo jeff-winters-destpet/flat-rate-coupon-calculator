@@ -313,6 +313,16 @@ function money(n){
   return "$" + (Math.round(n*100)/100).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function r2(n){ return Math.round(n*100)/100; }
+// Coupons round UP to the cent, never down. A coupon rounded down leaves the
+// customer paying the remainder, which breaks the flat-rate promise for the
+// sake of a cent. Rounding up costs Yourgi at most $0.01 per booking.
+// Only the coupon uses this. Subtotals, fees and tax stay on r2.
+//
+// The epsilon is not decoration. 26.25 + 2.1 - 21 is 7.350000000000001 in
+// binary floating point, and a bare Math.ceil turns that noise into a real
+// extra cent on every tax-before-coupon order. Nothing in money lands within
+// 1e-9 of a cent boundary on purpose, so trimming it is safe.
+function c2(n){ return Math.ceil(n*100 - 1e-9)/100; }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
 
@@ -361,14 +371,14 @@ function chargeOf(rate, unitsPer, petCount, discount){
 // Solve for the coupon that lands the customer on the quoted figure.
 // t = 0 collapses all three cases to plain subtraction.
 function couponOf(basePer, Qper, t, mode){
-  if(!(t > 0)) return { coupon: r2(basePer - Qper), tax: 0 };
+  if(!(t > 0)) return { coupon: c2(basePer - Qper), tax: 0 };
   if(mode === "after"){
     // Tax is charged on the post-coupon base, so solving for the target
     // total is division rather than subtraction.
-    return { coupon: r2(basePer - Qper/(1+t)), tax: r2(Qper - Qper/(1+t)) };
+    return { coupon: c2(basePer - Qper/(1+t)), tax: r2(Qper - Qper/(1+t)) };
   }
   var taxPer = r2(basePer * t);
-  return { coupon: r2(basePer + taxPer - Qper), tax: taxPer };
+  return { coupon: c2(basePer + taxPer - Qper), tax: taxPer };
 }
 
 // "Additional Pets Get a 30% Discount" -> 0.30. Anything else -> null (forces manual entry).
@@ -998,6 +1008,14 @@ function selfTest(){
   check("tax 8% before the coupon adds",         couponOf(26.25,21,0.08,"before").coupon, 7.35);
   check("the two tax modes disagree by $0.54",   r2(couponOf(26.25,21,0.08,"before").coupon -
                                                     couponOf(26.25,21,0.08,"after").coupon), 0.54);
+
+  group("coupon rounding — always up to the cent, so the customer is never left short");
+  // A $100 hand-typed quote across 6 dog walks gives a repeating remainder.
+  // Rounding to nearest would give $3.33 and overshoot the quote by two cents.
+  check("repeating remainder rounds up",         couponOf(20, 100/6, 0, "after").coupon, 3.34);
+  check("rounding up lands at or under the quote", r2((20 - 3.34) * 6), 99.96);
+  check("rounding to nearest would overshoot",   r2((20 - 3.33) * 6), 100.02);
+  check("an exact coupon is unchanged",          couponOf(26.25, 21, 0, "after").coupon, 5.25);
 
   group("split arithmetic — the promise divides evenly for the two split services");
   check("5 walks: $105 quote ÷ 5 = $21 exactly",  r2(quoteOf("dog walking",5,1) / 5), 21);
