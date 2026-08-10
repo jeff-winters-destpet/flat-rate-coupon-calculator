@@ -1,0 +1,71 @@
+name: Flat rate drift check
+
+# The rate table in coupon-calculator.html is a frozen copy of four numbers that
+# live in Webflow footer code on the booking page. Anyone can change them there.
+# This runs daily and opens an issue the day they diverge.
+
+on:
+  schedule:
+    - cron: "17 13 * * *" # 13:17 UTC daily, off the hour to dodge scheduler congestion
+  workflow_dispatch: # so anyone can run it on demand from the Actions tab
+
+permissions:
+  contents: write # to advance RATES_AS_OF on a clean match
+  issues: write # to raise the alert
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare the rate table against the live booking page
+        id: check
+        run: node .github/scripts/check-rates.mjs
+
+      - name: Raise or update an issue
+        if: steps.check.outputs.status != 'ok'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPORT: ${{ steps.check.outputs.report }}
+          STATUS: ${{ steps.check.outputs.status }}
+        run: |
+          set -euo pipefail
+          if [ "$STATUS" = "drift" ]; then
+            TITLE="Flat rate drift: the tool's rates no longer match the live page"
+          else
+            TITLE="Flat rate drift check is failing"
+          fi
+          printf '%s\n' "$REPORT" > report.md
+          EXISTING=$(gh issue list --state open --search "in:title \"Flat rate drift\"" \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "Commenting on existing issue #$EXISTING"
+            gh issue comment "$EXISTING" --body-file report.md
+          else
+            echo "Opening a new issue"
+            gh issue create --title "$TITLE" --body-file report.md
+          fi
+
+      - name: Close the alert once the rates match again
+        if: steps.check.outputs.status == 'ok'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          EXISTING=$(gh issue list --state open --search "in:title \"Flat rate drift\"" \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "Rates match the live page again as of $(date -u +%F). Closing."
+            gh issue close "$EXISTING"
+          fi
+
+      - name: Record that the rates were verified
+        if: steps.check.outputs.bumped == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add coupon-calculator.html
+          git commit -m "Advance RATES_AS_OF: rates verified against the live page"
+          git push
