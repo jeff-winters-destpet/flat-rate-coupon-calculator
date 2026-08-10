@@ -44,6 +44,9 @@
   button.ghost{background:transparent;border:1px solid var(--line);font-weight:600}
   button:disabled{opacity:.45;cursor:not-allowed}
   .hint{font-size:12px;color:var(--mute);margin-top:4px}
+  a{color:#1a4a7a;text-decoration:underline;text-underline-offset:2px}
+  a:hover{color:var(--blue)}
+  a:focus-visible{outline:2px solid var(--lblue);outline-offset:2px;border-radius:2px}
 
   details.adv{margin-top:6px;border-top:1px solid var(--line);padding-top:12px}
   details.adv summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--mute);letter-spacing:.05em;text-transform:uppercase}
@@ -151,6 +154,7 @@
       <label for="paste">Paste the Teams card</label>
       <textarea id="paste" rows="3" placeholder="Copy and paste all the text from the post in the Teams channel here."></textarea>
       <div class="hint" id="pasteMsg"></div>
+      <div class="hint"><a href="https://teams.microsoft.com/l/channel/19%3A3d25aabd984649fdb1100942c558c41e%40thread.tacv2/Flat%20Rate%20Order%20Form?groupId=069d49bc-baa7-4667-a88b-ac3037f64b69&amp;tenantId=a51d2d87-ec28-4f03-835d-3475f2c08bd1" target="_blank" rel="noopener noreferrer">Open the Flat Rate Order Form channel in Teams</a></div>
     </div>
 
     <div class="f">
