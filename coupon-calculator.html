@@ -136,7 +136,7 @@
 
 <header>
   <h1>Flat-Rate Coupon Calculator</h1>
-  <p class="sub">Works out the coupon a concierge agent issues so the customer pays exactly the flat rate they were quoted on <strong>/book/best-care-guarantee</strong>.</p>
+  <p class="sub">Calculates the difference between the quoted flat rate and the matched Pro's fees. Quoted on <strong>yourgi.com/book/best-care-guarantee</strong>.</p>
 </header>
 
 <div id="banner"></div>
@@ -482,7 +482,7 @@ function renderFoot(){
   var prov = provenanceLines();
 
   $("foot").innerHTML =
-    '<p>Flat rates and the <code>× 1.05</code> mirror the live widget at <code>/book/best-care-guarantee</code> ' +
+    '<p>Flat rates and the <code>× 1.05</code> mirror the live widget at <code>yourgi.com/book/best-care-guarantee</code> ' +
       'as checked <code>' + RATES_AS_OF + '</code>' +
       (age != null ? ' <span class="' + (stale ? 'stale' : '') + '">(' + age + ' days ago' +
         (stale ? ' — re-check the rates against the live page' : '') + ')</span>' : '') + '.</p>' +
