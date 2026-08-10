@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flat-Rate Coupon Calculator — Yourgi Concierge</title>
+<style>
+  :root{
+    --blue:#09213c; --gold:#f0b942; --tan:#faf5ea; --off:#fefefe;
+    --grey:#6d97b9; --lblue:#a2cafa; --orange:#fe7537; --green:#a1b51f;
+    --line:#dfd8c8; --ink:#09213c; --mute:#5c6b7a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--tan); color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  .wrap{max-width:1060px;margin:0 auto;padding:28px 20px 80px}
+  header{margin-bottom:22px}
+  h1{font-size:26px;line-height:1.2;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--mute);font-size:14px;margin:0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--off);border:1px solid var(--line);border-radius:10px;padding:18px}
+  .card h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin:0 0 14px;font-weight:700}
+  label{display:block;font-size:12px;font-weight:600;color:var(--mute);margin:0 0 4px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .f{margin-bottom:13px}
+  input,select,button{font:inherit;color:var(--ink)}
+  input,select,textarea{
+    width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;
+    font:inherit;color:var(--ink);
+  }
+  textarea{resize:vertical;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--lblue);outline-offset:-1px;border-color:var(--grey)}
+  .hint.ok{color:#3f6212;font-weight:600}
+  .hint.bad{color:#8a1414;font-weight:600}
+  button{
+    background:var(--gold);border:0;border-radius:6px;padding:10px 16px;font-weight:700;
+    cursor:pointer;color:var(--blue);
+  }
+  button:hover{filter:brightness(.96)}
+  button.ghost{background:transparent;border:1px solid var(--line);font-weight:600}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .hint{font-size:12px;color:var(--mute);margin-top:4px}
+
+  details.adv{margin-top:6px;border-top:1px solid var(--line);padding-top:12px}
+  details.adv summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--mute);letter-spacing:.05em;text-transform:uppercase}
+  details.adv > div{padding-top:13px}
+
+  #proList{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin-top:8px;display:none}
+  .pro{padding:9px 11px;border-bottom:1px solid #eee;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+  .pro:last-child{border-bottom:0}
+  .pro:hover{background:var(--tan)}
+  .pro.sel{background:#fff7e4;box-shadow:inset 3px 0 0 var(--gold)}
+  .pro .nm{font-weight:600}
+  .pro .meta{font-size:12px;color:var(--mute)}
+  .pro .rt{font-weight:700;white-space:nowrap}
+  .pro.dead .rt{color:var(--orange)}
+
+  .out{margin-top:18px}
+  .ledger{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:820px){.ledger{grid-template-columns:1fr}}
+  .li{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-variant-numeric:tabular-nums}
+  .li.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:9px;font-weight:700}
+  .li .lbl{color:var(--mute)}
+  .li.tot .lbl{color:var(--ink)}
+  .li.neg .val{color:var(--green)}
+
+  .verdict{
+    margin-top:18px;border:2px solid var(--blue);border-radius:10px;background:var(--blue);
+    color:var(--off);padding:20px;
+  }
+  .verdict .big{font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .verdict .cap{font-size:12px;letter-spacing:.09em;text-transform:uppercase;opacity:.72;margin-bottom:8px;font-weight:700}
+  .verdict .note{margin-top:10px;font-size:13px;opacity:.85}
+  .verdict.earn{background:#123d1f;border-color:#123d1f}
+  .verdict .prov{
+    margin-top:12px;padding-top:10px;border-top:1px solid rgba(254,254,254,.22);
+    font-size:12px;opacity:.8;
+  }
+
+  .flag{border-radius:7px;padding:10px 12px;font-size:13px;margin-top:10px;border:1px solid}
+  .flag.warn{background:#fff2e8;border-color:#f6c6a5;color:#7a3308}
+  .flag.stop{background:#ffeaea;border-color:#f3b4b4;color:#8a1414}
+  .flag.info{background:#eef4fb;border-color:#c9dcf2;color:#22405f}
+  .flag b{display:block;margin-bottom:2px}
+
+  /* Standing notice for the unverified assumptions. Not dismissible: the
+     coupon figure is provisional until VERIFY.md is worked, and an agent
+     who never sees this ships a number they cannot defend. */
+  .banner{
+    border:2px solid #e0a23c;background:#fff7e6;border-radius:10px;
+    padding:15px 17px;margin-bottom:20px;
+  }
+  .banner h3{
+    margin:0 0 4px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+    color:#7a3308;font-weight:800;
+  }
+  .banner p{margin:0 0 10px;font-size:13px;color:#7a3308}
+  .banner ul{margin:0;padding-left:19px;font-size:13px;color:#5c4522}
+  .banner li{margin-bottom:7px}
+  .banner li:last-child{margin-bottom:0}
+  .banner li b{color:#7a3308}
+  .banner .how{display:block;color:#7a6a52;margin-top:1px}
+  .banner code{background:#fff;border:1px solid #eddcbe;border-radius:3px;padding:1px 4px;font-size:12px}
+
+  pre.summary{
+    background:#fff;border:1px solid var(--line);border-radius:7px;padding:12px;
+    font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;margin:10px 0 0;
+  }
+  .actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .foot{margin-top:26px;font-size:12px;color:var(--mute);border-top:1px solid var(--line);padding-top:14px}
+  .foot code{background:#fff;border:1px solid var(--line);border-radius:3px;padding:1px 4px}
+  .foot .stale{color:#8a1414;font-weight:600}
+  .foot p{margin:0 0 7px}
+  .foot p:last-child{margin-bottom:0}
+
+  /* Self-test panel, reachable at ?selftest=1 */
+  .tt{width:100%;border-collapse:collapse;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tt th{text-align:left;padding:6px 8px;border-bottom:2px solid var(--line);font-size:11px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+  .tt td{padding:5px 8px;border-bottom:1px solid #eee;vertical-align:top}
+  .tt tr.f td{background:#ffeaea}
+  .tt .p{color:#3f6212;font-weight:700}
+  .tt .x{color:#8a1414;font-weight:700}
+  .tt .grp td{background:var(--tan);font-weight:700;color:var(--ink);letter-spacing:.04em}
+  .tally{font-size:22px;font-weight:800;margin:0 0 14px}
+  .tally.ok{color:#3f6212}
+  .tally.bad{color:#8a1414}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Flat-Rate Coupon Calculator</h1>
+  <p class="sub">Works out the coupon a concierge agent issues so the customer pays exactly the flat rate they were quoted on <strong>/book/best-care-guarantee</strong>.</p>
+</header>
+
+<div id="banner"></div>
+
+<div class="grid" id="inputs">
+
+  <!-- ORDER -->
+  <div class="card">
+    <h2>1 · The order</h2>
+
+    <div class="f">
+      <label for="paste">Paste the Teams card</label>
+      <textarea id="paste" rows="3" placeholder="Select the whole SendBlue request card in Teams, copy, paste here."></textarea>
+      <div class="hint" id="pasteMsg">Fills everything below. Or enter the order by hand.</div>
+    </div>
+
+    <div class="f">
+      <label for="svc">Service</label>
+      <select id="svc">
+        <option value="boarding">Boarding — $50/night</option>
+        <option value="daycare">Daycare — $40/day</option>
+        <option value="house sitting">House Sitting — $50/night</option>
+        <option value="dog walking">Dog Walking — $20/walk</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <div class="f">
+        <label for="start">Start date</label>
+        <input type="date" id="start">
+      </div>
+      <div class="f">
+        <label for="end">End date</label>
+        <input type="date" id="end">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="f">
+        <label for="zip">ZIP code</label>
+        <input type="text" id="zip" inputmode="numeric" maxlength="5" placeholder="80202">
+      </div>
+      <div class="f">
+        <label for="pets">Pets</label>
+        <input type="number" id="pets" min="1" max="8" value="1">
+      </div>
+    </div>
+
+    <div class="f">
+      <label for="quoted">Quoted total from the SendBlue card</label>
+      <input type="number" id="quoted" step="1" placeholder="e.g. 21">
+      <div class="hint" id="quoteEcho">Leave blank to use the recomputed quote.</div>
+    </div>
+  </div>
+
+  <!-- PRO -->
+  <div class="card">
+    <h2>2 · The matched Pro</h2>
+
+    <div class="f">
+      <label for="proq">Filter by name (optional)</label>
+      <input type="text" id="proq" placeholder="Taylor R.">
+    </div>
+
+    <button id="find">Find Pros in this ZIP</button>
+    <div class="hint" id="findHint">Uses the public search API. No login, nothing is written.</div>
+
+    <div id="proList"></div>
+
+    <details class="adv">
+      <summary>Overrides &amp; assumptions</summary>
+      <div>
+        <div class="row">
+          <div class="f">
+            <label for="dOv">Additional-pet discount %</label>
+            <input type="number" id="dOv" step="1" min="0" max="100" placeholder="auto">
+          </div>
+          <div class="f">
+            <label for="rOv">Pro rate override $</label>
+            <input type="number" id="rOv" step="0.01" placeholder="auto">
+          </div>
+        </div>
+
+        <div class="f">
+          <label for="baseOv" id="baseOvLbl">Real pre-coupon total from the estimate $</label>
+          <input type="number" id="baseOv" step="0.01" placeholder="Subtotal + Service Fee, before Taxes">
+          <div class="hint">If you already have the booking on screen, paste that figure. It replaces the reconstruction entirely.</div>
+        </div>
+
+        <div class="row">
+          <div class="f">
+            <label for="taxRate">Tax rate %</label>
+            <input type="number" id="taxRate" step="0.001" value="0">
+          </div>
+          <div class="f">
+            <label for="taxMode">Tax is applied</label>
+            <select id="taxMode">
+              <option value="after">after the coupon</option>
+              <option value="before">before the coupon</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint" id="taxHint">Unverified. At 0% both settings give the same answer. See VERIFY.md before changing it.</div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div class="out" id="out"></div>
+
+<div class="foot" id="foot"></div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var SEARCH_URL = "https://api.destpet.net/center/v5/center/search";
+var RADIUS = 52;              // production default at zoom 10
+var SERVICE_FEE = 0.05;
+
+// Mirrors the live widget's data-r / data-u attributes.
+// RATES_AS_OF is the date this table was last checked against the live page.
+// It is displayed in the footer and goes stale on purpose: a deployed copy
+// nobody revisits should say how old its prices are.
+var RATES_AS_OF = "2026-08-06";
+var STALE_AFTER_DAYS = 90;
+
+var FLAT = {
+  "boarding":      { rate:50, unit:"nights", appt:"Boarding" },
+  "daycare":       { rate:40, unit:"days",   appt:"Daycare" },
+  "house sitting": { rate:50, unit:"nights", appt:"House Sitting" },
+  "dog walking":   { rate:20, unit:"walks",  appt:"Dog Walking" }
+};
+
+// These become one booking per day in the product, so the coupon is per booking.
+// Boarding and House Sitting are a single date-range booking.
+// This is an UNVERIFIED assumption — see VERIFICATION.split below.
+var SPLITS_PER_DAY = { "daycare": true, "dog walking": true };
+
+// ─── Verification record ──────────────────────────────────────────────────
+// Two assumptions underneath this tool have never been tested against a real
+// booking. While either is open the coupon figure is labeled provisional and
+// the caveat travels with the copied summary into the ticket.
+//
+// TO CLOSE ONE: run the matching test in VERIFY.md, then fill in all three
+// fields below. The banner clears itself and the provenance appears instead.
+// Leave `date` empty to keep an assumption open.
+var VERIFICATION = {
+  tax: {
+    label: "Tax position relative to the coupon line",
+    claim: "Marketplace bookings carry no tax, so coupon = pre-coupon base − quoted total.",
+    how:   "Book a real order, apply the computed coupon, confirm the final total equals the quote.",
+    date: "", by: "", booking: ""
+  },
+  split: {
+    label: "Multi-day orders becoming multiple appointments",
+    claim: "Multi-day daycare and dog walking create one appointment per day, each carrying its own 5% service fee and accepting its own coupon.",
+    how:   "Book a 3-day daycare order and count the appointments, the service-fee lines, and the coupon fields.",
+    date: "", by: "", booking: ""
+  }
+};
+function isVerified(k){
+  var v = VERIFICATION[k];
+  return !!(v && v.date && String(v.date).trim());
+}
+
+var $ = function(id){ return document.getElementById(id); };
+var rows = [];        // last search result
+var picked = null;    // selected Pro row
+
+function money(n){
+  return "$" + (Math.round(n*100)/100).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function r2(n){ return Math.round(n*100)/100; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+
+// ═══ Pure core ════════════════════════════════════════════════════════════
+// Everything below takes arguments and returns values, with no DOM access, so
+// ?selftest=1 can check it. The DOM wrappers further down read the form and
+// call these. Keep it that way: untestable math is how a rate-table edit
+// breaks a coupon silently.
+
+// Bug-for-bug copy of the live widget's qty(): calendar-day difference,
+// plus 1 when the unit is not nights, floored at 1.
+function qtyOf(key, start, end){
+  if(!start || !end) return 1;
+  var d = Math.round((new Date(end) - new Date(start)) / 86400000);
+  if(FLAT[key].unit !== "nights") d += 1;
+  return d > 0 ? d : 1;
+}
+
+// Bug-for-bug copy of the live widget's totalOf().
+function quoteOf(key, q, petCount){
+  return Math.round(FLAT[key].rate * q * petCount * 1.05);
+}
+
+function unitLabel(key, q){
+  var u = FLAT[key].unit;
+  return q === 1 ? u.slice(0,-1) : u;
+}
+
+// One booking per day for the splitting services, one date-range booking otherwise.
+function splitOf(key, q){
+  var s = !!SPLITS_PER_DAY[key];
+  return { bookings: s ? q : 1, unitsPer: s ? 1 : q, split: s && q > 1 };
+}
+
+// The Pro side of the receipt, per booking:
+//   service cost − additional-pet discount → Subtotal → + 5% service fee
+function chargeOf(rate, unitsPer, petCount, discount){
+  var d     = (petCount > 1 && discount != null) ? discount : 0;
+  var first = rate * unitsPer;
+  var rest  = (petCount - 1) * rate * unitsPer * (1 - d);
+  var sub   = r2(first + rest);
+  var fee   = r2(sub * SERVICE_FEE);
+  return { first: first, rest: rest, sub: sub, fee: fee, base: r2(sub + fee) };
+}
+
+// Solve for the coupon that lands the customer on the quoted figure.
+// t = 0 collapses all three cases to plain subtraction.
+function couponOf(basePer, Qper, t, mode){
+  if(!(t > 0)) return { coupon: r2(basePer - Qper), tax: 0 };
+  if(mode === "after"){
+    // Tax is charged on the post-coupon base, so solving for the target
+    // total is division rather than subtraction.
+    return { coupon: r2(basePer - Qper/(1+t)), tax: r2(Qper - Qper/(1+t)) };
+  }
+  var taxPer = r2(basePer * t);
+  return { coupon: r2(basePer + taxPer - Qper), tax: taxPer };
+}
+
+// "Additional Pets Get a 30% Discount" -> 0.30. Anything else -> null (forces manual entry).
+function parseDiscount(txt){
+  if(!txt) return null;
+  var t = String(txt);
+  if(/\$/.test(t)) return null;                 // flat-dollar policy, not a rate we can apply
+  var m = t.match(/(\d+(?:\.\d+)?)\s*%/);
+  if(!m) return null;
+  var d = parseFloat(m[1]) / 100;
+  return (d >= 0 && d < 1) ? d : null;
+}
+
+// The Teams card's Quoted line carries five values in one string:
+//   "$105 (2 nights x 1 pet x $50 + 5% service fee)"
+function parseQuotedLine(txt){
+  var m = String(txt==null?"":txt).match(
+    /\$\s*([\d,]+(?:\.\d{1,2})?)\s*\(\s*(\d+)\s+([a-z]+)\s*[x×]\s*(\d+)\s*pets?\s*[x×]\s*\$\s*([\d.]+)/i);
+  if(!m) return null;
+  return {
+    total: parseFloat(m[1].replace(/,/g,"")),
+    qty:   parseInt(m[2],10),
+    unit:  m[3].toLowerCase(),
+    pets:  parseInt(m[4],10),
+    rate:  parseFloat(m[5])
+  };
+}
+
+function serviceFromText(txt){
+  txt = String(txt==null?"":txt);
+  var m = txt.match(/^[ \t]*Service[ \t]*\r?\n[ \t]*(.+?)[ \t]*$/mi);      // the Service block
+  if(!m) m = txt.match(/^[ \t]*(.+?)\s+in\s+\d{5}\s+(?:at flat rate|—|-)/mi); // the headline
+  if(m){
+    var c = m[1].trim().toLowerCase();
+    if(FLAT[c]) return c;
+  }
+  var keys = Object.keys(FLAT), lower = txt.toLowerCase(), hit = null, at = Infinity;
+  for(var i=0;i<keys.length;i++){                                          // last resort
+    var p = lower.indexOf(keys[i]);
+    if(p !== -1 && p < at){ at = p; hit = keys[i]; }
+  }
+  return hit;
+}
+
+function daysSince(iso){
+  var t = new Date(iso + "T00:00:00Z").getTime();
+  if(!isFinite(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
+
+// ═══ DOM wrappers ═════════════════════════════════════════════════════════
+function qty(){  return qtyOf($("svc").value, $("start").value, $("end").value); }
+function pets(){
+  var p = parseInt($("pets").value, 10);
+  return (p > 0) ? Math.min(p, 8) : 1;
+}
+function recomputedQuote(){ return quoteOf($("svc").value, qty(), pets()); }
+
+// ═══ Unverified assumptions ═══════════════════════════════════════════════
+// Which open assumption actually touches THIS order's number.
+//
+// Tax is global. Until the test is run we do not know whether marketplace
+// bookings carry tax at all, so no coupon figure is final.
+//
+// The per-day split only touches services that split, so it stays silent on
+// boarding and house sitting rather than blanketing every output.
+function openAssumptions(splitApplies){
+  var out = [];
+  if(!isVerified("tax")) out.push("tax");
+  if(!isVerified("split") && splitApplies) out.push("split");
+  return out;
+}
+
+function renderBanner(){
+  var open = [];
+  if(!isVerified("tax"))   open.push(VERIFICATION.tax);
+  if(!isVerified("split")) open.push(VERIFICATION.split);
+
+  if(!open.length){ $("banner").innerHTML = ""; return; }
+
+  $("banner").innerHTML =
+    '<div class="banner">' +
+      '<h3>' + open.length + ' unverified assumption' + (open.length>1?'s':'') + '</h3>' +
+      '<p>Coupon figures from this tool are <strong>provisional</strong> until these are tested against a real booking. ' +
+        'The caveat is included in the copied summary so it travels with the number.</p>' +
+      '<ul>' + open.map(function(v){
+        return '<li><b>' + esc(v.label) + '.</b> ' + esc(v.claim) +
+               '<span class="how">Closes on: ' + esc(v.how) + '</span></li>';
+      }).join("") + '</ul>' +
+      '<p style="margin:11px 0 0">Full procedure in <code>VERIFY.md</code>. ' +
+        'Record the result in the <code>VERIFICATION</code> block at the top of this file’s script and this notice clears.</p>' +
+    '</div>';
+}
+
+function provenanceLines(){
+  var L = [];
+  ["tax","split"].forEach(function(k){
+    if(isVerified(k)){
+      var v = VERIFICATION[k];
+      L.push(v.label + " verified " + v.date +
+             (v.by ? " by " + v.by : "") +
+             (v.booking ? " on booking " + v.booking : "") + ".");
+    }
+  });
+  return L;
+}
+
+function renderFoot(){
+  var age = daysSince(RATES_AS_OF);
+  var stale = age != null && age > STALE_AFTER_DAYS;
+  var prov = provenanceLines();
+
+  $("foot").innerHTML =
+    '<p>Flat rates and the <code>× 1.05</code> mirror the live widget at <code>/book/best-care-guarantee</code> ' +
+      'as checked <code>' + RATES_AS_OF + '</code>' +
+      (age != null ? ' <span class="' + (stale ? 'stale' : '') + '">(' + age + ' days ago' +
+        (stale ? ' — re-check the rates against the live page' : '') + ')</span>' : '') + '.</p>' +
+    '<p>The Pro side reads <code>ispData.services[].serviceCost</code> and <code>policies.additionalPetDiscount</code> from ' +
+      '<code>api.destpet.net/center/v5/center/search</code>. Nothing here writes to any Yourgi system.</p>' +
+    (prov.length ? '<p>' + prov.map(esc).join(" ") + '</p>' : '') +
+    '<p>Run the math checks at <code>?selftest=1</code>. Setup, blockers and hosting options are in <code>README.md</code>.</p>';
+}
+
+// ═══ Pro-side field readers ═══════════════════════════════════════════════
+function proRate(row, key){
+  var i, s, p, v;
+  var svcs = (row.ispData && row.ispData.services) || [];
+  for(i=0;i<svcs.length;i++){
+    s = svcs[i];
+    if(String(s.appointmentType||"").trim().toLowerCase() === key){
+      v = parseFloat(s.serviceCost);
+      if(isFinite(v) && v > 0) return v;
+    }
+  }
+  var sp = row.servicePrices || [];
+  for(i=0;i<sp.length;i++){
+    p = sp[i];
+    if(String(p.appointmentType||"").trim().toLowerCase() === key){
+      v = parseFloat(p.lowestCost);
+      if(isFinite(v) && v > 0) return v;
+    }
+  }
+  return null;
+}
+// `distance` comes back as {miles, kilometers}, not a number.
+function miles(row){
+  var d = row.distance;
+  if(d && typeof d === "object" && isFinite(d.miles)) return d.miles;
+  return isFinite(d) ? d : null;
+}
+function policy(row, field){
+  return row && row.ispData && row.ispData.policies ? row.ispData.policies[field] : null;
+}
+function capacity(row, key){
+  var svcs = (row.ispData && row.ispData.services) || [];
+  for(var i=0;i<svcs.length;i++){
+    if(String(svcs[i].appointmentType||"").trim().toLowerCase() === key){
+      var c = parseInt(svcs[i].dogsPerBooking, 10);
+      return isFinite(c) ? c : null;
+    }
+  }
+  return null;
+}
+
+// ═══ Teams card parser ════════════════════════════════════════════════════
+// The card is emitted by the widget's own adaptive-card builder, so its shape
+// is fixed and a regex reads it exactly. No model call is involved.
+var cardDrift = null;
+
+function parseCard(){
+  var txt = $("paste").value;
+  var msg = $("pasteMsg");
+  cardDrift = null;
+  if(!txt.trim()){
+    msg.className = "hint";
+    msg.textContent = "Fills everything below. Or enter the order by hand.";
+    return;
+  }
+
+  var got = [], missed = [];
+  var svc = serviceFromText(txt);
+  if(svc){ $("svc").value = svc; got.push(svc); } else { missed.push("service"); }
+
+  var dates = txt.match(/(\d{4}-\d{2}-\d{2})\s*(?:to|–|—|-)\s*(\d{4}-\d{2}-\d{2})/);
+  if(dates){ $("start").value = dates[1]; $("end").value = dates[2]; got.push(dates[1] + "→" + dates[2]); }
+  else { missed.push("dates"); }
+
+  var zip = txt.match(/\bin\s+(\d{5})\b/i) || txt.match(/\bZIP\b[\s:]*(\d{5})\b/i);
+  if(zip){ $("zip").value = zip[1]; got.push("ZIP " + zip[1]); } else { missed.push("ZIP"); }
+
+  var qm = parseQuotedLine(txt);
+  if(qm){
+    $("quoted").value = qm.total;
+    $("pets").value   = qm.pets;
+    got.push(money(qm.total), qm.pets + " pet" + (qm.pets>1?"s":""));
+
+    if(svc && FLAT[svc].rate !== qm.rate){
+      cardDrift = 'The card was priced at $' + qm.rate + ' per ' + qm.unit.replace(/s$/,"") +
+        ', but this tool holds $' + FLAT[svc].rate + ' for ' + svc + '. The live page rates have changed since ' +
+        RATES_AS_OF + '. ' +
+        'The card figure is what the customer agreed to and is being used, but the rate table in this file needs updating.';
+    }
+    if(dates && qm.qty !== qty()){
+      cardDrift = (cardDrift ? cardDrift + " " : "") +
+        'The card says ' + qm.qty + ' ' + qm.unit + ' but the pasted dates work out to ' + qty() + '. Check the dates.';
+    }
+  }else{
+    var justTotal = txt.match(/flat rate\s*\$\s*([\d,]+(?:\.\d{1,2})?)/i);
+    if(justTotal){ $("quoted").value = parseFloat(justTotal[1].replace(/,/g,"")); got.push("total only"); }
+    var pm = txt.match(/^[ \t]*Pets[ \t]*\r?\n[ \t]*(\d+)/mi);
+    if(pm){ $("pets").value = parseInt(pm[1],10); }
+    missed.push("quote breakdown");
+  }
+
+  if(/zip not yet covered/i.test(txt)){
+    missed.push("this was an OUT-OF-MARKET submission");
+  }
+
+  msg.className = "hint " + (missed.length ? "bad" : "ok");
+  msg.textContent = (got.length ? "Read: " + got.join(", ") + ". " : "") +
+                    (missed.length ? "Could not read: " + missed.join(", ") + ". Fill those in by hand." : "All fields filled.");
+
+  rows = []; picked = null; renderList();
+  render();
+}
+
+// ═══ Search ═══════════════════════════════════════════════════════════════
+function search(){
+  var zip = $("zip").value.trim();
+  var start = $("start").value, end = $("end").value;
+  if(!/^\d{5}$/.test(zip)){ $("findHint").textContent = "Enter a 5-digit ZIP first."; return; }
+  if(!start || !end){ $("findHint").textContent = "Enter both dates first."; return; }
+
+  var key = $("svc").value;
+  $("find").disabled = true;
+  $("findHint").textContent = "Searching…";
+
+  fetch(SEARCH_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dogCount: 1,                      // widest net: we are looking a known Pro up, not matching
+      startDate: start,
+      endDate: end,
+      search: zip,
+      limitRadius: true,
+      radiusLimit: RADIUS,
+      appointmentTypes: [FLAT[key].appt]
+    })
+  })
+  .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(function(d){
+    rows = (d && d.data) || [];
+    picked = null;
+    $("findHint").textContent = rows.length + " Pro" + (rows.length===1?"":"s") +
+      " within " + RADIUS + " mi of " + zip + ". Pick the matched one.";
+    renderList();
+    render();
+  })
+  .catch(function(e){
+    rows = []; picked = null;
+    $("findHint").textContent = "Search failed: " + e.message +
+      ". If this says 'Failed to fetch', the page was opened directly instead of through the launcher — see README.md.";
+    renderList(); render();
+  })
+  .finally(function(){ $("find").disabled = false; });
+}
+
+function renderList(){
+  var box = $("proList"), key = $("svc").value;
+  var q = $("proq").value.trim().toLowerCase();
+  var list = rows.filter(function(r){
+    return !q || String(r.name||"").toLowerCase().indexOf(q) !== -1;
+  });
+  if(!list.length){ box.style.display = "none"; box.innerHTML = ""; return; }
+
+  box.style.display = "block";
+  box.innerHTML = list.map(function(r){
+    var rate = proRate(r, key);
+    var isSel = picked && picked.centerId === r.centerId;
+    var raw  = policy(r, "additionalPetDiscount");
+    var disc = parseDiscount(raw);
+    var dTxt = disc != null ? Math.round(disc*100) + "% addl-pet"
+             : (raw ? "addl-pet policy not a %" : "no addl-pet discount set");
+    var mi   = miles(r);
+    return '<div class="pro' + (isSel?" sel":"") + (rate==null?" dead":"") + '" data-id="' + esc(r.centerId) + '">' +
+      '<div><div class="nm">' + esc(r.name) + '</div>' +
+      '<div class="meta">' + (mi != null ? (Math.round(mi*10)/10) + " mi · " : "") +
+        (r.centerLabel ? esc(r.centerLabel) + " · " : "") + dTxt +
+      '</div></div>' +
+      '<div class="rt">' + (rate==null ? "no rate" : money(rate)) + '</div>' +
+    '</div>';
+  }).join("");
+
+  Array.prototype.forEach.call(box.querySelectorAll(".pro"), function(el){
+    el.addEventListener("click", function(){
+      var id = el.getAttribute("data-id");
+      picked = rows.filter(function(r){ return String(r.centerId) === id; })[0] || null;
+      renderList(); render();
+    });
+  });
+}
+
+// ═══ Render ═══════════════════════════════════════════════════════════════
+function render(){
+  var key   = $("svc").value;
+  var q     = qty();
+  var n     = pets();
+  var Qcalc = recomputedQuote();
+  var Qin   = parseFloat($("quoted").value);
+  var Q     = isFinite(Qin) && Qin > 0 ? Qin : Qcalc;
+
+  $("quoteEcho").textContent = "Recomputed from the live widget formula: $" + Qcalc +
+    "  (" + q + " " + unitLabel(key, q) + " × " + n + " pet" + (n>1?"s":"") +
+    " × $" + FLAT[key].rate + " + 5% service fee)";
+
+  var out = $("out"), flags = [];
+
+  if(cardDrift){
+    flags.push(['warn','The card and this tool disagree', cardDrift]);
+  }
+  if(isFinite(Qin) && Qin > 0 && Qin !== Qcalc){
+    flags.push(['warn','Quoted total does not match the formula',
+      'The card says ' + money(Qin) + ', the widget formula gives ' + money(Qcalc) +
+      '. Using the card figure, because that is what the customer was shown. Check the order details above against the card.']);
+  }
+
+  // Pro side
+  var rateOv = parseFloat($("rOv").value);
+  var rate   = isFinite(rateOv) && rateOv > 0 ? rateOv
+             : (picked ? proRate(picked, key) : null);
+
+  var rawD = picked ? policy(picked, "additionalPetDiscount") : null;
+  var polD = parseDiscount(rawD);
+  var dOv  = parseFloat($("dOv").value);
+  var d, dSrc;
+  if(isFinite(dOv))      { d = dOv/100; dSrc = "manual"; }
+  else if(polD != null)  { d = polD;    dSrc = "policy"; }
+  else if(!rawD)         { d = 0;       dSrc = "unset";  }
+  else                   { d = null;    dSrc = "unparsed"; }
+
+  var baseOv = parseFloat($("baseOv").value);
+  var usingOverride = isFinite(baseOv) && baseOv > 0;
+
+  if(!usingOverride && rate == null){
+    out.innerHTML = '<div class="flag info"><b>Pick the matched Pro</b>' +
+      'Search by ZIP and select the Pro the concierge matched, or paste the real pre-coupon total under Overrides.</div>';
+    return;
+  }
+  if(!usingOverride && n > 1 && dSrc === "unparsed"){
+    out.innerHTML = '<div class="flag stop"><b>Additional-pet discount could not be read</b>' +
+      'This Pro\'s policy reads "' + esc(rawD) + '", which is not a percentage this tool can apply. ' +
+      'Enter it manually under Overrides. Assuming zero would overstate the coupon and cost Yourgi money on every extra pet.</div>';
+    return;
+  }
+  if(!usingOverride && n > 1 && dSrc === "unset"){
+    flags.push(['warn','This Pro has no additional-pet discount configured',
+      'Every pet is priced at the full rate on the Pro side, while the flat quote also charges full price per pet. ' +
+      'Confirm on their profile before issuing, because an unset policy and a zero policy look identical here.']);
+  }
+
+  // Daycare and Dog Walking become one booking per day. Boarding and House Sitting
+  // are a single date-range booking. The coupon has to match whichever it is.
+  var sp       = splitOf(key, q);
+  var bookings = sp.bookings;
+  var unitsPer = sp.unitsPer;
+  var split    = sp.split;
+
+  $("baseOvLbl").textContent = "Real pre-coupon total from the estimate $" + (split ? ", per booking" : "");
+
+  // Promise, per booking
+  var Qper = Q / bookings;
+  var QperR = r2(Qper);
+  if(split && Math.abs(QperR * bookings - Q) > 0.005){
+    flags.push(['warn','The quote does not divide evenly across ' + bookings + ' bookings',
+      money(Q) + ' ÷ ' + bookings + ' is ' + money(Qper) + ' with a remainder. Issuing ' + money(QperR) +
+      ' on every booking lands the customer at ' + money(r2(QperR * bookings)) + '. Adjust one booking by the difference.']);
+  }
+
+  // Charge, per booking
+  var subPer, feePer, basePer, breakdown;
+  if(usingOverride){
+    basePer = r2(baseOv); subPer = null; feePer = null;
+    breakdown = '<div class="li"><span class="lbl">Pre-coupon total, pasted from the estimate</span><span class="val">' + money(basePer) + '</span></div>';
+  }else{
+    var c = chargeOf(rate, unitsPer, n, d);
+    subPer  = c.sub;
+    feePer  = c.fee;
+    basePer = c.base;
+    var dd  = (n > 1 && d != null) ? d : 0;
+    breakdown =
+      '<div class="li"><span class="lbl">' + money(rate) + ' × ' + unitsPer + ' ' + unitLabel(key, unitsPer) + ', first pet</span><span class="val">' + money(c.first) + '</span></div>' +
+      (n > 1 ? '<div class="li"><span class="lbl">' + (n-1) + ' more pet' + (n>2?"s":"") + ' at ' + Math.round(dd*100) + '% off</span><span class="val">' + money(c.rest) + '</span></div>' : '') +
+      '<div class="li"><span class="lbl">Subtotal</span><span class="val">' + money(subPer) + '</span></div>' +
+      '<div class="li"><span class="lbl">Service fee, 5%</span><span class="val">' + money(feePer) + '</span></div>';
+  }
+  var baseAll = r2(basePer * bookings);
+
+  // Coupon, per booking
+  var t    = (parseFloat($("taxRate").value) || 0) / 100;
+  var mode = $("taxMode").value;
+  var cr   = couponOf(basePer, Qper, t, mode);
+  var cPer = cr.coupon;
+  var taxLine = "", preTaxNote = "";
+
+  if(t > 0 && mode === "after"){
+    taxLine = '<div class="li"><span class="lbl">Taxes at ' + (t*100) + '%, on the post-coupon base</span><span class="val">' + money(cr.tax) + '</span></div>';
+    preTaxNote = "Tax is charged on the discounted base, so the coupon is solved as base − Q ÷ (1 + t).";
+  }else if(t > 0){
+    taxLine = '<div class="li"><span class="lbl">Taxes at ' + (t*100) + '%, on the full base</span><span class="val">' + money(cr.tax) + '</span></div>';
+    preTaxNote = "Tax is charged before the coupon, so the coupon must cover the tax as well.";
+  }
+
+  var cAll     = r2(cPer * bookings);
+  var earning  = cPer <= 0;
+  var absorbed = earning ? -cPer : cPer;
+
+  // Capacity + holiday + supply-type advisories
+  if(picked){
+    if(picked.profileType === "center" || !picked.ispData){
+      flags.push(['stop','This result is a center, not a Yourgi Pro',
+        'For centers the search API returns a price <em>floor</em> rather than a rate, and it comes back as 0 on roughly ' +
+        'half of all center service entries. The reconstruction below will understate the charge. ' +
+        'Use the pasted-estimate override for centers.']);
+    }
+    var cap = capacity(picked, key);
+    if(cap != null && n > cap){
+      flags.push(['warn','Pet count exceeds this Pro\'s stated capacity',
+        'Their listing allows ' + cap + ' dog' + (cap===1?"":"s") + ' per booking and this order has ' + n + '. The rate card may not apply.']);
+    }
+    var hf = policy(picked, "holidayFee");
+    if(hf && /%/.test(String(hf))){
+      flags.push(['warn','This Pro charges a holiday fee',
+        '"' + esc(hf) + '". The tool cannot detect holiday dates, and the flat quote does not include it. If any date is a holiday, add it to the coupon by hand.']);
+    }
+  }
+  if(split){
+    flags.push(['info','This order is ' + bookings + ' separate bookings',
+      'Multi-day ' + key + ' books one appointment per day, so each day carries its own 5% service fee and needs its own coupon. ' +
+      'The figure below is <strong>per booking</strong>. Issue it ' + bookings + ' times. ' +
+      (isVerified("split") ? '' : '<strong>This split is unverified.</strong> See the notice at the top of the page.')]);
+  }
+
+  // Provisional labelling: only the assumptions that touch THIS number.
+  var openA = openAssumptions(split);
+  var provNote = "";
+  if(openA.length){
+    provNote = " Provisional: " +
+      (openA.indexOf("tax") !== -1 ? "the tax position is untested, so a nonzero tax would change this figure" : "") +
+      (openA.length > 1 ? ", and " : "") +
+      (openA.indexOf("split") !== -1 ? "the per-day booking split is untested, so the number of coupons may be wrong" : "") +
+      ".";
+  }
+
+  out.innerHTML =
+    '<div class="card"><h2>3 · The reconciliation</h2>' +
+      '<div class="ledger">' +
+        '<div>' +
+          '<div class="li"><span class="lbl"><strong>What we promised</strong>' + (split ? ', per booking' : '') + '</span><span></span></div>' +
+          '<div class="li"><span class="lbl">$' + FLAT[key].rate + ' × ' + q + ' ' + unitLabel(key, q) + ' × ' + n + ' pet' + (n>1?"s":"") + ' + 5%</span><span class="val">' + money(Qcalc) + '</span></div>' +
+          (Q !== Qcalc ? '<div class="li"><span class="lbl">Card figure, used</span><span class="val">' + money(Q) + '</span></div>' : '') +
+          (split ? '<div class="li"><span class="lbl">÷ ' + bookings + ' bookings</span><span class="val">' + money(QperR) + '</span></div>' : '') +
+          '<div class="li tot"><span class="lbl">Customer pays' + (split ? ' per booking' : '') + '</span><span class="val">' + money(split ? QperR : Q) + '</span></div>' +
+        '</div>' +
+        '<div>' +
+          '<div class="li"><span class="lbl"><strong>What the system charges</strong>' + (split ? ', per booking' : '') + '</span><span></span></div>' +
+          breakdown +
+          taxLine +
+          '<div class="li tot"><span class="lbl">Before coupon' + (split ? ', per booking' : '') + '</span><span class="val">' + money(basePer) + '</span></div>' +
+          (split ? '<div class="li"><span class="lbl">× ' + bookings + ' bookings</span><span class="val">' + money(baseAll) + '</span></div>' : '') +
+        '</div>' +
+      '</div>' +
+
+      '<div class="verdict' + (earning ? ' earn' : '') + '">' +
+        '<div class="cap">' + (earning ? 'No coupon needed' : (split ? 'Coupon to issue, per booking' : 'Coupon to issue')) +
+          (openA.length ? ' · provisional' : '') + '</div>' +
+        '<div class="big">' + money(absorbed) + (split && !earning ? ' <span style="font-size:16px;font-weight:600;opacity:.7">× ' + bookings + ' = ' + money(cAll) + '</span>' : '') + '</div>' +
+        '<div class="note">' + (earning
+          ? 'This Pro comes in ' + money(absorbed) + (split ? ' per booking' : '') + ' <em>under</em> the quote, so no coupon is needed. ' +
+            'The customer is charged ' + money(split ? baseAll : basePer) + ' against a ' + money(Q) + ' quote and keeps the difference. ' +
+            'Tell them we found a Pro below the quoted price and honored it.'
+          : (split
+              ? 'Issue ' + money(absorbed) + ' on each of the ' + bookings + ' bookings, ' + money(cAll) + ' across the order, so the customer pays ' + money(Q) + ' in total.'
+              : 'Yourgi absorbs ' + money(absorbed) + ' so the customer pays ' + money(Q) + '.') +
+            (preTaxNote ? ' ' + preTaxNote : '')) +
+          provNote +
+        '</div>' +
+        (provenanceLines().length ? '<div class="prov">' + esc(provenanceLines().join(" ")) + '</div>' : '') +
+      '</div>' +
+
+      flags.map(function(f){
+        return '<div class="flag ' + f[0] + '"><b>' + f[1] + '</b>' + f[2] + '</div>';
+      }).join("") +
+
+      '<div class="actions">' +
+        '<button class="ghost" id="copy">Copy summary for the ticket</button>' +
+      '</div>' +
+      '<pre class="summary" id="sum">' + esc(summaryText({
+        key:key, q:q, n:n, Q:Q, rate:rate, d:d, subPer:subPer, feePer:feePer,
+        basePer:basePer, baseAll:baseAll, cPer:cPer, cAll:cAll, QperR:QperR,
+        bookings:bookings, unitsPer:unitsPer, split:split,
+        earning:earning, override:usingOverride, open:openA
+      })) + '</pre>' +
+    '</div>';
+
+  $("copy").addEventListener("click", function(){
+    navigator.clipboard.writeText($("sum").textContent).then(function(){
+      $("copy").textContent = "Copied";
+      setTimeout(function(){ $("copy").textContent = "Copy summary for the ticket"; }, 1600);
+    });
+  });
+}
+
+// The summary is how the number leaves this page and lands in a ticket, so the
+// provisional caveat has to leave with it. A banner nobody copies is decoration.
+function summaryText(x){
+  var L = [], per = x.split ? " (per booking)" : "";
+
+  if(x.open && x.open.length){
+    L.push("*** PROVISIONAL — do not treat as final ***");
+    if(x.open.indexOf("tax") !== -1){
+      L.push("  · Tax position vs. the coupon line is untested. A nonzero tax changes this figure.");
+    }
+    if(x.open.indexOf("split") !== -1){
+      L.push("  · The one-appointment-per-day split is untested. The coupon COUNT may be wrong.");
+    }
+    L.push("  See VERIFY.md in the calculator folder.");
+    L.push("");
+  }
+
+  L.push("FLAT-RATE RECONCILIATION");
+  L.push("Service:   " + x.key + ", " + x.q + " " + unitLabel(x.key, x.q) + ", " + x.n + " pet" + (x.n>1?"s":""));
+  L.push("Dates:     " + ($("start").value || "?") + " to " + ($("end").value || "?") + "  ZIP " + ($("zip").value || "?"));
+  L.push("Pro:       " + (picked ? picked.name + " (centerId " + picked.centerId + ")" : "manual entry"));
+  if(x.split) L.push("Bookings:  " + x.bookings + " separate bookings, one per day");
+  L.push("");
+  L.push("Quoted to customer:   " + money(x.Q) + (x.split ? "  (" + money(x.QperR) + " per booking)" : ""));
+  if(x.override){
+    L.push("System pre-coupon:    " + money(x.basePer) + per + "  (pasted from the estimate)");
+  }else{
+    L.push("Pro rate:             " + money(x.rate) + " per " + unitLabel(x.key, 1));
+    if(x.n > 1) L.push("Addl-pet discount:    " + (x.d != null ? Math.round(x.d*100) + "%" : "n/a"));
+    L.push("Subtotal:             " + money(x.subPer) + per);
+    L.push("Service fee (5%):     " + money(x.feePer) + per);
+    L.push("System pre-coupon:    " + money(x.basePer) + per);
+  }
+  if(x.split) L.push("Order pre-coupon:     " + money(x.baseAll) + "  (" + x.bookings + " bookings)");
+  L.push("");
+  if(x.earning){
+    L.push("NO COUPON NEEDED. " + money(-x.cPer) + per + " under the quote.");
+    L.push("Customer is charged " + money(x.split ? x.baseAll : x.basePer) + " against a " + money(x.Q) + " quote.");
+  }else if(x.split){
+    L.push("ISSUE COUPON:        " + money(x.cPer) + " on EACH of " + x.bookings + " bookings");
+    L.push("                     " + money(x.cAll) + " across the whole order");
+  }else{
+    L.push("ISSUE COUPON:        " + money(x.cPer));
+  }
+
+  var prov = provenanceLines();
+  if(prov.length){ L.push(""); L.push(prov.join(" ")); }
+  return L.join("\n");
+}
+
+// ═══ Self-test ════════════════════════════════════════════════════════════
+// Reachable at ?selftest=1. Expected values are hand-computed from the
+// formulas in "Coupon Calculator Design.md", NOT captured from this file's
+// output — a snapshot of current behaviour would enshrine any bug it has.
+// Run this after editing FLAT, SPLITS_PER_DAY, or anything under Pure core.
+function selfTest(){
+  var T = [], pass = 0, fail = 0;
+
+  function group(name){ T.push({grp:name}); }
+  function check(name, got, want){
+    var ok;
+    if(typeof want === "number" && typeof got === "number"){
+      ok = Math.abs(got - want) < 0.005;
+    }else if(want && typeof want === "object"){
+      ok = JSON.stringify(got) === JSON.stringify(want);
+      got = JSON.stringify(got); want = JSON.stringify(want);
+    }else{
+      ok = got === want;
+    }
+    T.push({ok:ok, name:name, want:String(want), got:String(got)});
+    if(ok) pass++; else fail++;
+  }
+
+  group("qtyOf — calendar-day difference, +1 when the unit is not nights, floored at 1");
+  check("boarding 8/20→8/22 is 2 nights",            qtyOf("boarding","2026-08-20","2026-08-22"), 2);
+  check("daycare 8/20→8/22 is 3 days",               qtyOf("daycare","2026-08-20","2026-08-22"), 3);
+  check("dog walking same day is 1 walk",            qtyOf("dog walking","2026-08-20","2026-08-20"), 1);
+  check("boarding same day floors to 1",             qtyOf("boarding","2026-08-20","2026-08-20"), 1);
+  check("house sitting 8/01→8/08 is 7 nights",       qtyOf("house sitting","2026-08-01","2026-08-08"), 7);
+  check("missing dates fall back to 1",              qtyOf("boarding","",""), 1);
+
+  group("quoteOf — flat rate × qty × pets × 1.05, rounded to whole dollars");
+  check("2 nights x 1 pet x $50 = $105 (Teams card)", quoteOf("boarding",2,1), 105);
+  check("1 walk x 1 pet x $20 = $21",                 quoteOf("dog walking",1,1), 21);
+  check("3 days x 2 pets x $40 = $252",               quoteOf("daycare",3,2), 252);
+  check("4 nights x 2 pets x $50 = $420",             quoteOf("boarding",4,2), 420);
+  check("1 night x 1 pet x $50 rounds 52.5 to $53",   quoteOf("house sitting",1,1), 53);
+  check("second pet costs full price, not discounted", quoteOf("boarding",2,2), 210);
+
+  group("splitOf — daycare and dog walking book one appointment per day");
+  check("daycare 3 days is 3 bookings",     splitOf("daycare",3),      {bookings:3, unitsPer:1, split:true});
+  check("dog walking 5 walks is 5 bookings", splitOf("dog walking",5), {bookings:5, unitsPer:1, split:true});
+  check("daycare 1 day is not a split",     splitOf("daycare",1),      {bookings:1, unitsPer:1, split:false});
+  check("boarding 2 nights is 1 booking",   splitOf("boarding",2),     {bookings:1, unitsPer:2, split:false});
+  check("house sitting 3 nights is 1 booking", splitOf("house sitting",3), {bookings:1, unitsPer:3, split:false});
+
+  group("chargeOf — Pro rate, additional-pet discount, then the 5% service fee");
+  check("$25 x 1 unit, 1 pet: subtotal",        chargeOf(25,1,1,0).sub, 25);
+  check("$25 x 1 unit, 1 pet: fee",             chargeOf(25,1,1,0).fee, 1.25);
+  check("$25 x 1 unit, 1 pet: base = $26.25",   chargeOf(25,1,1,0).base, 26.25);
+  check("$60 x 2 nights, 1 pet: base = $126",   chargeOf(60,2,1,0).base, 126);
+  check("$30 x 4 nights, 2 pets @50% off: sub", chargeOf(30,4,2,0.5).sub, 180);
+  check("$30 x 4 nights, 2 pets @50% off: base", chargeOf(30,4,2,0.5).base, 189);
+  check("$50 x 1, 2 pets @10% off: base",        chargeOf(50,1,2,0.10).base, 99.75);
+  check("a null discount on 1 pet is harmless",  chargeOf(40,1,1,null).base, 42);
+
+  group("couponOf — solve for the coupon that lands the customer on the quote");
+  check("$26.25 base vs $21 quote = $5.25",      couponOf(26.25,21,0,"after").coupon, 5.25);
+  check("the fee gap is why it is not $5.00",    r2(couponOf(26.25,21,0,"after").coupon - 5), 0.25);
+  check("cheap Pro goes negative: $189 vs $420", couponOf(189,420,0,"after").coupon, -231);
+  check("tax 0% ignores the mode (after)",       couponOf(26.25,21,0,"after").coupon, 5.25);
+  check("tax 0% ignores the mode (before)",      couponOf(26.25,21,0,"before").coupon, 5.25);
+  check("tax 8% after the coupon divides",       couponOf(26.25,21,0.08,"after").coupon, 6.81);
+  check("tax 8% before the coupon adds",         couponOf(26.25,21,0.08,"before").coupon, 7.35);
+  check("the two tax modes disagree by $0.54",   r2(couponOf(26.25,21,0.08,"before").coupon -
+                                                    couponOf(26.25,21,0.08,"after").coupon), 0.54);
+
+  group("split arithmetic — the promise divides evenly for the two split services");
+  check("5 walks: $105 quote ÷ 5 = $21 exactly",  r2(quoteOf("dog walking",5,1) / 5), 21);
+  check("3 daycare days: $126 ÷ 3 = $42 exactly", r2(quoteOf("daycare",3,1) / 3), 42);
+  check("3 daycare days, 2 pets: $252 ÷ 3 = $84", r2(quoteOf("daycare",3,2) / 3), 84);
+  check("a pasted $100 over 3 bookings leaves a remainder",
+        r2(r2(100/3) * 3) !== 100, true);
+
+  group("parseDiscount — a policy that will not parse must return null, never 0");
+  check("'Additional Pets Get a 30% Discount'",  parseDiscount("Additional Pets Get a 30% Discount"), 0.30);
+  check("'Additional Pets Get a 10% Discount'",  parseDiscount("Additional Pets Get a 10% Discount"), 0.10);
+  check("decimal percentages",                   parseDiscount("Additional Pets Get a 12.5% Discount"), 0.125);
+  check("null policy",                           parseDiscount(null), null);
+  check("empty policy",                          parseDiscount(""), null);
+  check("a flat-dollar policy is not a rate",    parseDiscount("$5 off each additional pet"), null);
+  check("100% is rejected as implausible",       parseDiscount("Additional Pets Get a 100% Discount"), null);
+  check("prose with no percentage",              parseDiscount("Ask about additional pets"), null);
+
+  group("parseQuotedLine — the Teams card carries five values in one string");
+  check("standard card line", parseQuotedLine("$105 (2 nights x 1 pet x $50 + 5% service fee)"),
+        {total:105, qty:2, unit:"nights", pets:1, rate:50});
+  check("thousands separator", parseQuotedLine("$1,050 (10 nights x 2 pets x $50 + 5% service fee)"),
+        {total:1050, qty:10, unit:"nights", pets:2, rate:50});
+  check("singular unit and pet", parseQuotedLine("$21 (1 walk x 1 pet x $20 + 5% service fee)"),
+        {total:21, qty:1, unit:"walk", pets:1, rate:20});
+  check("multiplication sign instead of x", parseQuotedLine("$84 (2 days × 1 pet × $40 + 5% service fee)"),
+        {total:84, qty:2, unit:"days", pets:1, rate:40});
+  check("unparseable text returns null", parseQuotedLine("no quote here"), null);
+
+  group("serviceFromText — read the service off the card");
+  check("from the Service block",  serviceFromText("Service\nDog Walking\nPets\n2"), "dog walking");
+  check("from the headline",       serviceFromText("Boarding in 80202 at flat rate $105"), "boarding");
+  check("two-word service",        serviceFromText("Service\nHouse Sitting"), "house sitting");
+  check("no service named",        serviceFromText("nothing relevant"), null);
+
+  group("verification record — an empty date means the assumption is still open");
+  check("openAssumptions is honest about tax",
+        openAssumptions(false).indexOf("tax") !== -1, !isVerified("tax"));
+  check("the split caveat is silent on non-splitting services",
+        openAssumptions(false).indexOf("split") !== -1, false);
+  check("the split caveat fires on splitting services",
+        openAssumptions(true).indexOf("split") !== -1, !isVerified("split"));
+
+  // Render
+  $("inputs").style.display = "none";
+  $("banner").innerHTML = "";
+  $("out").innerHTML =
+    '<div class="card">' +
+      '<h2>Self-test</h2>' +
+      '<p class="tally ' + (fail ? 'bad' : 'ok') + '">' +
+        pass + ' passed, ' + fail + ' failed</p>' +
+      '<p class="hint" style="margin-bottom:14px">Expected values are hand-computed from the formulas in ' +
+        '<code>Coupon Calculator Design.md</code>. A failure means either the formula changed or the rate table did. ' +
+        'Fix the code, or update the expectation and say why in <code>README.md</code>.</p>' +
+      '<table class="tt"><thead><tr><th style="width:34px"></th><th>Check</th><th style="width:150px">Expected</th><th style="width:150px">Got</th></tr></thead><tbody>' +
+      T.map(function(r){
+        if(r.grp) return '<tr class="grp"><td colspan="4">' + esc(r.grp) + '</td></tr>';
+        return '<tr class="' + (r.ok ? '' : 'f') + '">' +
+          '<td class="' + (r.ok ? 'p' : 'x') + '">' + (r.ok ? 'PASS' : 'FAIL') + '</td>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + esc(r.want) + '</td>' +
+          '<td>' + esc(r.got) + '</td></tr>';
+      }).join("") +
+      '</tbody></table>' +
+      '<div class="actions"><button class="ghost" onclick="location.search=\'\'">Back to the calculator</button></div>' +
+    '</div>';
+  renderFoot();
+}
+
+// ═══ Wiring ═══════════════════════════════════════════════════════════════
+if(/[?&]selftest/.test(location.search)){
+  selfTest();
+}else{
+  ["svc","start","end","pets","quoted","dOv","rOv","baseOv","taxRate","taxMode"].forEach(function(id){
+    $(id).addEventListener("input", render);
+    $(id).addEventListener("change", render);
+  });
+  $("svc").addEventListener("change", function(){ rows = []; picked = null; renderList(); render(); });
+  $("proq").addEventListener("input", renderList);
+  $("find").addEventListener("click", search);
+  $("paste").addEventListener("input", parseCard);
+  $("paste").addEventListener("paste", function(){ setTimeout(parseCard, 0); });
+  $("zip").addEventListener("keydown", function(e){ if(e.key === "Enter") search(); });
+
+  if(isVerified("tax")){
+    $("taxHint").textContent = "Verified " + VERIFICATION.tax.date + ". " + VERIFICATION.tax.claim;
+  }
+
+  renderBanner();
+  renderFoot();
+  render();
+}
+})();
+</script>
+</body>
+</html>
