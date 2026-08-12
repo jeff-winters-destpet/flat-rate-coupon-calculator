@@ -15,6 +15,7 @@ Verified against live production data on 2026-08-10. None of this needs a bookin
 - **The coupon closes the loop arithmetically.** Across 7,840 combinations of service, quantity, pets, Pro rate and discount, issuing the computed coupon lands the customer on the quoted total with zero drift.
 - **Split quotes always divide evenly.** Daycare and dog walking both produce whole per-unit figures, so the uneven-division warning only fires on a hand-typed quoted total.
 - **The additional-pet discount parser.** 282 Pros across 8 ZIPs and 4 services produced only five distinct policy strings, all on a fixed 10/20/30/40/50% template, all parsed. The blocking path is rare in practice.
+- **The holiday fee field is a fixed template too.** Across 133 unique Pros, `holidayFee` takes six values: "No holiday fee specified" and five percentages at 5, 10, 15, 20 and 25%. No flat-dollar variants exist, so the tool's percent-only check is adequate. 21 of 133 Pros charge one. What is missing is not a parser, it is a list of holiday dates and the three answers in Run 3 below.
 
 ## What you need first
 
@@ -108,7 +109,11 @@ Claim 2 is the expensive one. On a two-pet booking with a 20% discount, charging
 
 This test is not about tax and not about splitting. It stops at the pre-coupon base. Test 1 step 5 already asks you to compare that figure; this worksheet is the fuller version, with a multi-pet order that actually exercises the discount.
 
-### Steps
+It also carries a third run, on a holiday date. The holiday fee is the one gap in the tool where the error falls on the customer: the coupon comes out too small and they pay more than the flat rate they were guaranteed. Runs 1 and 2 cover the reconstruction. Run 3 covers the holiday fee. Do all three in one session against the same Pro where you can.
+
+### Runs 1 and 2: the reconstruction
+
+#### Steps
 
 1. Pick a Pro with a nonzero additional-pet discount and a rate above the flat rate. Record the rate and the discount percentage from the tool's Pro list.
 2. Run a two-pet, two-night boarding order through the calculator. Two nights avoids the rounding artifact noted below. Record the four Pro-side lines: first pet, additional pet, subtotal, service fee, and the pre-coupon base.
@@ -117,7 +122,7 @@ This test is not about tax and not about splitting. It stops at the pre-coupon b
 5. Compare line by line, not just the total. Two errors in opposite directions can produce a matching total and still be wrong.
 6. Repeat once with a single pet. If the two-pet case disagrees but the one-pet case matches, the fault is in the discount handling rather than the rate or the fee.
 
-### Reading the result
+#### Reading the result
 
 | What you see | What it means | What to do |
 |---|---|---|
@@ -128,15 +133,53 @@ This test is not about tax and not about splitting. It stops at the pre-coupon b
 | Totals match but individual lines do not | Two offsetting errors. | Do not record. Write down every line and raise it. |
 | The pre-coupon base is off by exactly $0.50 on an odd-night order | Expected, and not this test's problem. See the note below. | Re-run on an even number of nights and read the result from that. |
 
+### Run 3: the holiday fee
+
+#### Why it matters
+
+The tool does not price holiday fees. It warns when the matched Pro has one and tells the agent to add it by hand. If that warning is missed, the Pro's real charge is higher than the reconstruction, the coupon is short by the fee, and the customer pays the quoted price plus the holiday fee. Every other rounding decision in this tool errs toward the customer. This one errs against them, and nothing on the receipt explains why.
+
+The warning also fires on the wrong trigger. It appears whenever the Pro has a holiday fee configured, whether or not any date in the order is actually a holiday. About one match in six shows it, and it is usually irrelevant, which is how a warning becomes background noise before the day it matters.
+
+The fee itself is not the obstacle. `holidayFee` is a fixed template at 5, 10, 15, 20 or 25%, and it parses cleanly. Three things block pricing it, and one holiday-dated booking answers all three:
+
+1. **Scope.** Does the fee apply to the whole booking, or only to the nights that fall on a holiday? A five-night stay covering one holiday is a large difference.
+2. **Order.** Is the fee applied before or after the additional-pet discount? On a multi-pet holiday booking the two orderings give different subtotals.
+3. **Fee base.** Is the 5% service fee charged on the holiday-inflated subtotal, or on the subtotal before the holiday fee?
+
+Nobody should build holiday pricing into the tool before these are answered. A confident wrong number is worse than today's honest "add it by hand."
+
+#### Steps
+
+1. Pick a Pro with a holiday fee **and** a nonzero additional-pet discount. Both are needed to answer question 2. Record the rate, the discount, and the fee percentage.
+2. Choose a date range where **some but not all** nights are holidays. Two nights on, one night off is enough, and it is the only way to answer question 1. Use whatever the product treats as a holiday, not whatever you assume it does.
+3. Build the booking with two pets. Stop at the payment screen.
+4. Write down every line: service cost, additional pet discount, holiday fee, subtotal, service fee, pre-coupon total.
+5. Work out from those lines which of the two answers holds for each of the three questions above. Write down the answer, not just the numbers, because the next person needs the rule rather than the arithmetic.
+6. Also record **what the product counted as a holiday**. A date list is the one input the tool cannot derive, and this is the cheapest chance to start one.
+
+#### Reading the result
+
+| What you see | What it means | What to do |
+|---|---|---|
+| The fee equals the percentage times the whole subtotal | Scope is the whole booking. | Record it. Pricing needs only a holiday date list to detect overlap. |
+| The fee equals the percentage times the holiday nights only | Scope is per night. | Record it. Pricing needs a date list and a per-night breakdown, which `qtyOf` does not currently produce. Note that in `README.md`. |
+| The discounted subtotal is what the fee is applied to | Fee comes after the additional-pet discount. | Record the order. |
+| The undiscounted subtotal is what the fee is applied to | Fee comes before the discount. | Record the order. This is the more expensive ordering for Yourgi and worth flagging to Kai. |
+| The 5% service fee is larger than 5% of the pre-holiday subtotal | The service fee compounds on the holiday fee. | Record it. `chargeOf` will need the holiday fee folded in before the service fee, not after. |
+| No holiday fee line appears at all | Either the date is not a holiday in the product's view, or the fee is not applied at booking time. | Do not record. Find out which before drawing any conclusion, and write down the date you used. |
+
 ### A known artifact, so you do not chase it
 
 The live widget computes the quote as `Math.round(rate * nights * pets * 1.05)`. When `rate * nights * pets` is odd, the exact figure ends in `.5` and rounds up. A one-night, one-pet boarding quote is $53.00 rather than $52.50.
 
-The customer is quoted $0.50 above a true 5% fee, and the coupon is $0.50 smaller to match. The tool copies this deliberately, because the customer was shown the rounded figure and that is what has to be honored. It is a pricing-page artifact, not a calculator error, and it only ever falls in Yourgi's favor. Use an even number of nights for this test so it does not muddy the comparison.
+The customer is quoted $0.50 above a true 5% fee, and the coupon is $0.50 smaller to match. The tool copies this deliberately, because the customer was shown the rounded figure and that is what has to be honored. It is a pricing-page artifact, not a calculator error, and it only ever falls in Yourgi's favor. Use an even number of nights for runs 1 and 2 so it does not muddy the comparison.
 
-### Pass criterion
+### Pass criterion for Test 3
 
-Every Pro-side line on the receipt matches the calculator, on both the two-pet and the one-pet run, with the fee demonstrably charged on the discounted subtotal.
+Runs 1 and 2: every Pro-side line on the receipt matches the calculator, on both the two-pet and the one-pet run, with the service fee demonstrably charged on the discounted subtotal. That is what closes Test 3.
+
+Run 3 does not pass or fail. It answers three questions and produces at least one confirmed holiday date. Record all four and the tool can be taught to price holiday fees; until then the manual warning stays. Test 3 can be recorded as closed on runs 1 and 2 alone, so a missing Run 3 should not hold up the other two.
 
 ---
 
@@ -178,3 +221,7 @@ Fill this in as you go, so the next person can see what was tested and where.
 | Coupon code reuse (from Test 2, step 5) | | | | | |
 | Pro-side reconstruction, one pet | | | | | |
 | Pro-side reconstruction, two pets and the fee base | | | | | |
+| Holiday fee: scope, whole booking or holiday nights only | | | | | |
+| Holiday fee: applied before or after the additional-pet discount | | | | | |
+| Holiday fee: whether the 5% service fee compounds on it | | | | | |
+| Holiday dates confirmed by the product (start a list) | | | | | |
