@@ -12,7 +12,7 @@ Opening `coupon-calculator.html` directly by double-clicking looks like it works
 
 ## 1. Paste the Teams card
 
-Select the whole SendBlue request card in Teams, copy it, and paste it into the first box.
+Copy all the text from the post in the Teams channel and paste it into the first box.
 
 The tool fills in the service, the dates, the ZIP, the pet count, and the quoted total in one go. Green text under the box means it read everything. Red text lists what it could not read, and you fill those in by hand.
 
