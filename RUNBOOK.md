@@ -10,7 +10,7 @@ Double-click `open-calculator.command` on a Mac, or `open-calculator.bat` on Win
 
 Opening `coupon-calculator.html` directly by double-clicking looks like it works, but the Pro search will fail. Always use the launcher.
 
-## 1. Paste the Teams card
+## 1. Paste the Teams message
 
 Copy all the text from the post in the Teams channel and paste it into the first box.
 
@@ -18,7 +18,7 @@ The tool fills in the service, the dates, the ZIP, the pet count, and the quoted
 
 ## 2. Check what it read
 
-Look at the service, dates, and pet count against the card. The tool tells you when its own recomputed quote disagrees with the card's figure, and it always uses the card's figure, because that is the price the customer agreed to.
+Look at the service, dates, and pet count against the message. The tool tells you when its own recomputed quote disagrees with the message's figure, and it always uses the message's figure, because that is the price the customer agreed to.
 
 ## 3. Find the Pro
 
@@ -50,7 +50,7 @@ It refuses to guess rather than produce a wrong number. Each of these is a real 
 | This result is a center, not a Yourgi Pro | The tool cannot price centers. Build the booking in the product and paste the real pre-coupon total under Overrides. |
 | Pet count exceeds this Pro's stated capacity | Their listing does not allow that many pets per booking, so the rate may not apply. Check with the Pro before issuing. |
 | This Pro charges a holiday fee | Check whether any date in the order is a holiday. If so, work the extra out by hand and add it. The tool cannot see holiday dates. |
-| The card and this tool disagree | The live page's prices may have changed. The customer's quoted figure is still honored. Tell your lead so the tool gets updated. |
+| The message and this tool disagree | The live page's prices may have changed. The customer's quoted figure is still honored. Tell your lead so the tool gets updated. |
 | The quote does not divide evenly across N bookings | Issue the shown amount on every booking, then adjust one booking by the leftover cents so the order total lands exactly on the quote. |
 | Search failed: Failed to fetch | The page was opened without the launcher. Close it and use `open-calculator.command` or `open-calculator.bat`. |
 
