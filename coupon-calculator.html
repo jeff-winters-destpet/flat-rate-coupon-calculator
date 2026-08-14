@@ -151,7 +151,7 @@
     <h2>1 - Paste or Key the Order Details</h2>
 
     <div class="f">
-      <label for="paste">Paste the Teams card</label>
+      <label for="paste">Paste the Teams message</label>
       <textarea id="paste" rows="3" placeholder="Copy and paste all the text from the post in the Teams channel here."></textarea>
       <div class="hint" id="pasteMsg"></div>
       <div class="hint"><a href="https://teams.microsoft.com/l/channel/19%3A3d25aabd984649fdb1100942c558c41e%40thread.tacv2/Flat%20Rate%20Order%20Form?groupId=069d49bc-baa7-4667-a88b-ac3037f64b69&amp;tenantId=a51d2d87-ec28-4f03-835d-3475f2c08bd1" target="_blank" rel="noopener noreferrer">Open the Flat Rate Order Form channel in Teams</a></div>
@@ -396,7 +396,7 @@ function parseDiscount(txt){
   return (d >= 0 && d < 1) ? d : null;
 }
 
-// The Teams card's Quoted line carries five values in one string:
+// The Teams message's Quoted line carries five values in one string:
 //   "$105 (2 nights x 1 pet x $50 + 5% service fee)"
 function parseQuotedLine(txt){
   var m = String(txt==null?"":txt).match(
@@ -547,8 +547,8 @@ function capacity(row, key){
   return null;
 }
 
-// ═══ Teams card parser ════════════════════════════════════════════════════
-// The card is emitted by the widget's own adaptive-card builder, so its shape
+// ═══ Teams message parser ═════════════════════════════════════════════════
+// The message is emitted by the widget's own adaptive-card builder, so its shape
 // is fixed and a regex reads it exactly. No model call is involved.
 var cardDrift = null;
 
@@ -580,14 +580,14 @@ function parseCard(){
     got.push(money(qm.total), qm.pets + " pet" + (qm.pets>1?"s":""));
 
     if(svc && FLAT[svc].rate !== qm.rate){
-      cardDrift = 'The card was priced at $' + qm.rate + ' per ' + qm.unit.replace(/s$/,"") +
+      cardDrift = 'The message was priced at $' + qm.rate + ' per ' + qm.unit.replace(/s$/,"") +
         ', but this tool holds $' + FLAT[svc].rate + ' for ' + svc + '. The live page rates have changed since ' +
         RATES_AS_OF + '. ' +
-        'The card figure is what the customer agreed to and is being used, but the rate table in this file needs updating.';
+        'The message figure is what the customer agreed to and is being used, but the rate table in this file needs updating.';
     }
     if(dates && qm.qty !== qty()){
       cardDrift = (cardDrift ? cardDrift + " " : "") +
-        'The card says ' + qm.qty + ' ' + qm.unit + ' but the pasted dates work out to ' + qty() + '. Check the dates.';
+        'The message says ' + qm.qty + ' ' + qm.unit + ' but the pasted dates work out to ' + qty() + '. Check the dates.';
     }
   }else{
     var justTotal = txt.match(/flat rate\s*\$\s*([\d,]+(?:\.\d{1,2})?)/i);
@@ -702,12 +702,12 @@ function render(){
   var out = $("out"), flags = [];
 
   if(cardDrift){
-    flags.push(['warn','The card and this tool disagree', cardDrift]);
+    flags.push(['warn','The message and this tool disagree', cardDrift]);
   }
   if(isFinite(Qin) && Qin > 0 && Qin !== Qcalc){
     flags.push(['warn','Quoted total does not match the formula',
-      'The card says ' + money(Qin) + ', the widget formula gives ' + money(Qcalc) +
-      '. Using the card figure, because that is what the customer was shown. Check the order details above against the card.']);
+      'The message says ' + money(Qin) + ', the widget formula gives ' + money(Qcalc) +
+      '. Using the message figure, because that is what the customer was shown. Check the order details above against the message.']);
   }
 
   // Pro side
@@ -843,7 +843,7 @@ function render(){
         '<div>' +
           '<div class="li"><span class="lbl"><strong>What we promised</strong>' + (split ? ', per booking' : '') + '</span><span></span></div>' +
           '<div class="li"><span class="lbl">$' + FLAT[key].rate + ' × ' + q + ' ' + unitLabel(key, q) + ' × ' + n + ' pet' + (n>1?"s":"") + ' + 5%</span><span class="val">' + money(Qcalc) + '</span></div>' +
-          (Q !== Qcalc ? '<div class="li"><span class="lbl">Card figure, used</span><span class="val">' + money(Q) + '</span></div>' : '') +
+          (Q !== Qcalc ? '<div class="li"><span class="lbl">Message figure, used</span><span class="val">' + money(Q) + '</span></div>' : '') +
           (split ? '<div class="li"><span class="lbl">÷ ' + bookings + ' bookings</span><span class="val">' + money(QperR) + '</span></div>' : '') +
           '<div class="li tot"><span class="lbl">Customer pays' + (split ? ' per booking' : '') + '</span><span class="val">' + money(split ? QperR : Q) + '</span></div>' +
         '</div>' +
@@ -978,7 +978,7 @@ function selfTest(){
   check("missing dates fall back to 1",              qtyOf("boarding","",""), 1);
 
   group("quoteOf — flat rate × qty × pets × 1.05, rounded to whole dollars");
-  check("2 nights x 1 pet x $50 = $105 (Teams card)", quoteOf("boarding",2,1), 105);
+  check("2 nights x 1 pet x $50 = $105 (Teams message)", quoteOf("boarding",2,1), 105);
   check("1 walk x 1 pet x $20 = $21",                 quoteOf("dog walking",1,1), 21);
   check("3 days x 2 pets x $40 = $252",               quoteOf("daycare",3,2), 252);
   check("4 nights x 2 pets x $50 = $420",             quoteOf("boarding",4,2), 420);
@@ -1038,8 +1038,8 @@ function selfTest(){
   check("100% is rejected as implausible",       parseDiscount("Additional Pets Get a 100% Discount"), null);
   check("prose with no percentage",              parseDiscount("Ask about additional pets"), null);
 
-  group("parseQuotedLine — the Teams card carries five values in one string");
-  check("standard card line", parseQuotedLine("$105 (2 nights x 1 pet x $50 + 5% service fee)"),
+  group("parseQuotedLine — the Teams message carries five values in one string");
+  check("standard message line", parseQuotedLine("$105 (2 nights x 1 pet x $50 + 5% service fee)"),
         {total:105, qty:2, unit:"nights", pets:1, rate:50});
   check("thousands separator", parseQuotedLine("$1,050 (10 nights x 2 pets x $50 + 5% service fee)"),
         {total:1050, qty:10, unit:"nights", pets:2, rate:50});
@@ -1049,7 +1049,7 @@ function selfTest(){
         {total:84, qty:2, unit:"days", pets:1, rate:40});
   check("unparseable text returns null", parseQuotedLine("no quote here"), null);
 
-  group("serviceFromText — read the service off the card");
+  group("serviceFromText — read the service off the message");
   check("from the Service block",  serviceFromText("Service\nDog Walking\nPets\n2"), "dog walking");
   check("from the headline",       serviceFromText("Boarding in 80202 at flat rate $105"), "boarding");
   check("two-word service",        serviceFromText("Service\nHouse Sitting"), "house sitting");
