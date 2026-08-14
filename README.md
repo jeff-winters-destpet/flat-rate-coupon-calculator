@@ -42,7 +42,7 @@ Both close on one test each, written up as a worksheet in `VERIFY.md`. Recording
 
 ## Checking the math
 
-Open the tool and add `?selftest=1` to the URL, or go straight to `http://localhost:8777/coupon-calculator.html?selftest=1` once a launcher is running. 57 checks covering the quote formula, the day-count rules, the Pro-side reconstruction, both tax modes, the per-day split, discount parsing, and the Teams card parser.
+Open the tool and add `?selftest=1` to the URL, or go straight to `http://localhost:8777/coupon-calculator.html?selftest=1` once a launcher is running. 57 checks covering the quote formula, the day-count rules, the Pro-side reconstruction, both tax modes, the per-day split, discount parsing, and the Teams message parser.
 
 Expected values are hand-computed from the formulas in `Coupon Calculator Design.md`, not captured from the code's own output. A snapshot of current behavior would enshrine any bug it already has.
 
@@ -54,7 +54,7 @@ The tool holds its own copy of the flat rates that the live page charges: Boardi
 
 Two safeguards, neither of which is a substitute for checking:
 
-- Pasting a Teams card whose priced rate disagrees with the table raises a drift warning and uses the card's figure, because that is what the customer agreed to.
+- Pasting a Teams message whose priced rate disagrees with the table raises a drift warning and uses the message's figure, because that is what the customer agreed to.
 - The footer shows how old the rate table is. Past 90 days it says so in red.
 
 `RATES_AS_OF` near the top of the script is the date the table was last compared against the live page. Update it whenever you check, whether or not anything changed.
